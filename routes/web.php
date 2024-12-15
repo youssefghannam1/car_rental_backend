@@ -24,6 +24,7 @@ Route::prefix('api')->group(function () {
     Route::get('/dashboard/revenues_and_losses', [DashboardController::class, 'getRevenuesAndLosses']);
 
     Route::get('/clients', [ClientController::class, 'index']);
+    Route::get('/clients/{id}', [ClientController::class, 'show']);
     Route::get('/clients/search/{cin}', [ClientController::class, 'searchByCin']);
     Route::post('/clients', [ClientController::class, 'store']);
     Route::put( '/clients/{client}', [ClientController::class, 'update']);

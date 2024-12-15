@@ -17,12 +17,8 @@ return new class extends Migration
             $table->integer('age')->nullable();
             $table->string('telephone')->nullable();
             $table->string('cin')->nullable()->unique();
-            $table->integer('days');
-            $table->decimal('total_price');
-            $table->dateTime('date_debut');
-            $table->dateTime('date_fin');
             $table->enum('status', ['retournée', 'en attente'])->default('en attente');
-            $table->timestamps(); 
+            $table->timestamps();
         });
 
 

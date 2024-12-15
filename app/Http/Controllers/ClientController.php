@@ -3,98 +3,151 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use Illuminate\Support\Facades\DB;
 use App\Models\Car;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ClientController extends Controller
 {
-    public function index() {
-        return Client::with('cars')->orderBy('created_at', 'desc')->get();
-    }
-
-    public function store(Request $request) {
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'age' => 'required|integer|min:18',
-            'cars' => 'required|array',
-            'cars.*' => 'exists:cars,id',
-            'cin' => 'required|string|unique:clients',
-            'days' => 'required|integer',
-            'total_price' => 'required',
-            'date_debut' => 'required|date',
-            'date_fin' => 'required|date',
-            'telephone' => 'required|string|max:15',
-        ]);
-        $client = Client::create($request->all());
-        foreach ($request->cars as $carId) {
-            $car = Car::findOrFail($carId);
-            $car->status = "pas disponible";
-            $car->save();
-        }
-        $client->cars()->attach($request->cars);
-        return apiResponse($client, "Client Created", 201);
-    }
-    public function searchByCin($cin)
+    public function index()
     {
-        $client = Client::with(['cars', 'reservations.car'])->where('cin', $cin)->first();
-        if ($client)
-            return apiResponse($client, "Client Found", 200);
-        return apiResponse(null, "Client NOT Found", 200);
+        return Client::with(['cars', 'reservations.car'])->orderBy('created_at', 'desc')->get();
     }
 
-    public function update(Request $request, Client $client) {
+    public function store(Request $request)
+    {
         $request->validate([
             'full_name' => 'required|string|max:255',
             'age' => 'required|integer|min:18',
-            'cin' => 'required|string|unique:clients,cin,' . $client->id,
-            'days' => 'required|integer',
-            'total_price' => 'required',
+            'cin' => 'required|string|unique:clients',
+            'telephone' => 'required|string|max:15',
             'cars' => 'required|array',
             'cars.*' => 'exists:cars,id',
-            'date_debut' => 'nullable',
-            'date_fin' => 'nullable',
-            'telephone' => 'required|string|max:15',
+            'total_price' => 'required|numeric',
+            'date_debut' => 'required|date',
+            'date_fin' => 'required|date|after:date_debut',
         ]);
-        $currentCars = $client->cars()->pluck('cars.id')->toArray();
-        foreach ($request->cars as $carId) {
-            $car = Car::findOrFail($carId);
-            $car->status = 'pas disponible';
-            $car->save();
-        }
-        foreach ($currentCars as $carId) {
-            if (!in_array($carId, $request->cars)) {
+
+        DB::transaction(function () use ($request) {
+            $client = Client::create($request->only('full_name', 'age', 'cin', 'telephone',['status' => 'en attente']));
+
+            // Create a reservation for the client
+            foreach ($request->cars as $carId) {
                 $car = Car::findOrFail($carId);
-                $car->status = 'disponible';
+                $car->status = 'pas disponible';
                 $car->save();
+
+                Reservation::create([
+                    'client_id' => $client->id,
+                    'car_id' => $carId,
+                    'start_date' => $request->date_debut,
+                    'end_date' => $request->date_fin,
+                    'status' => 'pending',
+                    'price' => $request->total_price / count($request->cars),
+                ]);
             }
-        }
-        $client->update($request->all());
-        $client->cars()->sync($request->cars);
-        return apiResponse($client, "Client Updated", 200);
+
+            $client->cars()->attach($request->cars);
+        });
+
+        return apiResponse(null, 'Client and Reservation created successfully', 201);
     }
-    
-    public function destroy(Client $client) {
-        $carIds = DB::table('client_car')
-                    ->where('client_id', $client->id)
-                    ->pluck('car_id'); 
-            DB::table('client_car')
-            ->where('client_id', $client->id)
-            ->delete();
-            Car::whereIn('id', $carIds)
-            ->update(['status' => 'disponible']); 
-            $response = $client->delete();
-            return response()->json([
+
+    public function searchByCin($cin)
+{
+    // Validate the CIN format (letters and numbers allowed)
+    // Assuming the CIN is alphanumeric and may have a specific length, adjust the regex as needed
+    if (!preg_match('/^[A-Za-z0-9]+$/', $cin)) {
+        return apiResponse(null, 'Invalid CIN format', 400);
+    }
+
+    // Search for the client in the database using the CIN
+    $client = Client::with(['cars', 'reservations.car'])->where('cin', $cin)->first();
+
+    if ($client) {
+        return apiResponse($client, 'Client Found', 200);
+    }
+
+    // If CIN is valid but not found, return a success message indicating new client
+    return apiResponse(null, 'New client, not found in database', 200);
+}
+
+
+
+public function update(Request $request, Client $client)
+{
+    $request->validate([
+        'full_name' => 'required|string|max:255',
+        'age' => 'required|integer|min:18',
+        'cin' => 'required|string|unique:clients,cin,' . $client->id,
+        'telephone' => 'required|string|max:15',
+    ]);
+
+    DB::transaction(function () use ($request, $client) {
+        // Update only the required fields
+        $client->update($request->only('full_name', 'age', 'cin', 'telephone'));
+    });
+
+    return apiResponse($client, 'Client updated successfully', 200);
+}
+
+
+    public function destroy(Client $client)
+    {
+        DB::transaction(function () use ($client) {
+            $carIds = $client->cars()->pluck('cars.id');
+            DB::table('client_car')->where('client_id', $client->id)->delete();
+            Car::whereIn('id', $carIds)->update(['status' => 'disponible']);
+            Reservation::where('client_id', $client->id)->update(['status' => 'cancelled']);
+            $client->delete();
+        });
+
+        return response()->json([
             'message' => 'Client deleted and car status updated',
-            'status' => $response
+            'status' => true
         ]);
     }
 
-    public function prolongation(Request $request, Client $client) {
-        $client->days = $request->days;
-        $client->save();
-    }
+    public function prolongation(Request $request, Client $client)
+{
+    $request->validate([
+        'days' => 'required|integer|min:1',
+    ]);
+
+    DB::transaction(function () use ($request, $client) {
+        foreach ($client->reservations as $reservation) {
+            // Convert the end_date to a Carbon instance if it's not already
+            $endDate = Carbon::parse($reservation->end_date);
+
+            // Manually calculate the new end date by adding the number of days
+            $endDate->modify("+{$request->days} days");
+
+            // Save the updated end_date
+            $reservation->end_date = $endDate;
+            $reservation->save();
+        }
+    });
+
+    return apiResponse(null, 'Reservation prolonged successfully', 200);
 }
+
+    public function show($id)
+{
+    $client = Client::with(['cars', 'reservations.car'])->find($id);
+
+    if (!$client) {
+        return apiResponse(null, 'Client not found', 404);
+    }
+
+    return apiResponse($client, 'Client found successfully', 200);
+}
+
+}
+
+
+
 // <?php
 // namespace App\Http\Controllers;
 // use App\Models\Client;

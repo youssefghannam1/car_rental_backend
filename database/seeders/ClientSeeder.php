@@ -69,10 +69,6 @@ class ClientSeeder extends Seeder
             Client::create([
                 'full_name' => $fullname,
                 'age' => $ages[$index],
-                'days' => 2,
-                'date_debut' => $now,
-                'total_price' => 100002,
-                'date_fin' => $now,
                 'telephone' => $telephones[$index],
                 'cin' => $cins[$index],
                 'status' => 'en attente',
@@ -81,7 +77,7 @@ class ClientSeeder extends Seeder
         DB::table('client_car')->insert([
             'client_id' => 1,
             'car_id' => 2
-        ]); 
+        ]);
         DB::table('client_car')->insert([
             'client_id' => 1,
             'car_id' => 1

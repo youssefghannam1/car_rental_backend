@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Reservation;
+use App\Models\Invoice;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 // use App\Http\Resources\ReservationResource;
@@ -16,11 +17,31 @@ class ReservationController extends Controller
         $reservation = Reservation::create($request->validated());
         return apiResponse($reservation, 'Reservation created successfully');
     }
-    public function update(UpdateReservationRequest $request, int $id) {
-        $reservation = Reservation::findOrFail($id);
-        $reservation->update($request->validated());
-        return apiResponse($reservation, 'Reservation updated successfully');
+    public function update(UpdateReservationRequest $request, int $id)
+{
+    $reservation = Reservation::findOrFail($id);
+    if ($reservation->status == 'cancelled') {
+        $invoice = Invoice::where('client_id', $reservation->client_id)
+                          ->where('car_id', $reservation->car_id)
+                          ->first();
+        if ($invoice) {
+            $invoice->delete();
+        }
     }
+    $reservation->update($request->validated());
+    if ($reservation->status == 'confirmed') {
+        Invoice::create([
+            'client_id' => $reservation->client_id,
+            'car_id' => $reservation->car_id,
+            'amount' => $reservation->price,
+            'date_issued' => now(),
+            'due_date' => now()->addDays(30),
+            'status' => 'unpaid',
+        ]);
+    }
+    return apiResponse($reservation, 'Reservation updated successfully');
+}
+
     public function destroy(Reservation $reservation) {
         $reservation->delete();
         return apiResponse(null, 'Reservation deleted successfully');

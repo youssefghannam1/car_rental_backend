@@ -6,9 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
-    // Other properties and methods
+    protected $fillable = [
+        'client_id',
+        'car_id',
+        'amount',
+        'date_issued',
+        'due_date',
+        'status',
+    ];
 
-    // Define the relationship with the Client model
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -17,4 +23,6 @@ class Invoice extends Model
     {
         return $this->belongsTo(Car::class);
     }
+
+   
 }

@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Client;
 use App\Models\Car;
 use Illuminate\Http\Request;
+use App\Models\Reservation;
 
 class InvoiceController extends Controller
 {
@@ -19,13 +20,26 @@ class InvoiceController extends Controller
 
     $invoiceData = $request->all();
 
+    $client = Client::find($request->client_id);
+
+    if (!$client) {
+        return response()->json(['error' => 'Client not found'], 404);
+    }
+
+    $invoiceData['client_telephone'] = $client->telephone;
+
     $car = Car::find($request->car_id);
-    $amount = $car->price_per_day * $request->days;
+
+    $days = $request->days;
+
+    $amount = $car->price_per_day * $days;
 
     $invoiceData['amount'] = $amount;
     $invoiceData['date_issued'] = now();
-    $invoiceData['due_date'] = now()->addDays('days');
-    $invoiceData['status'] = 'unpaid'; 
+    $invoiceData['due_date'] = now()->addDays($days);
+    $invoiceData['status'] = 'unpaid';
+
+    unset($invoiceData['days']);
 
     $invoice = Invoice::create($invoiceData);
 
