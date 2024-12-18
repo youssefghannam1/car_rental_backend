@@ -7,16 +7,21 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvoiceController;
-
-
+use App\Http\Controllers\JWTAuthController;
+use App\Http\Middleware\JwtMiddleware;
 
 Route::prefix('api')->group(function () {
 
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    // Public Routes
+Route::post('register', [JWTAuthController::class, 'register']);
+Route::post('login', [JWTAuthController::class, 'login']);
 
+
+// Routes that require JWT authentication
+    Route::middleware([JwtMiddleware::class])->group(function () {
+    // User Info (Authenticated User)
+    Route::get('user', [JWTAuthController::class, 'getUser']);
+    Route::get('logout', [JWTAuthController::class, 'logout']);
     Route::get('/dashboard/revenues', [DashboardController::class, 'getRevenues']);
     Route::get('/dashboard/upcoming_reservations', [DashboardController::class, 'getUpcomingReservations']);
     Route::get('/dashboard/upcoming_maintenances', [DashboardController::class, 'getUpcomingMaintenances']);
@@ -48,7 +53,7 @@ Route::prefix('api')->group(function () {
     Route::get('/invoices', [InvoiceController::class, 'getInvoices']);
     Route::put('/invoices/{id}/status', [InvoiceController::class, 'updateInvoiceStatus']);
 });
-
+});
 
 Route::get('/', function () {
     return view('welcome');
