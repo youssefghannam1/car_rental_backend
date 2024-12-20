@@ -26,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         DB::prohibitDestructiveCommands(App::isProduction());
-        Model::shouldBeStrict();
-        Model::unguard();
+        // Model::shouldBeStrict();
+        // Model::unguard();
         URL::forceScheme('https');
         Vite::usePrefetchStrategy('aggressive');
         Schema::defaultStringLength(191);
