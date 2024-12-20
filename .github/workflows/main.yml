@@ -28,10 +28,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-
 
-      - name: Install dependencies
-        run: |
-          composer install --prefer-dist --no-progress
-          composer dump-autoload --optimize
+      # - name: Install dependencies
+      #   run: |
+      #     composer install --prefer-dist --no-progress
+      #     composer dump-autoload --optimize
 
       - name: Generate JWT Secret (if not set)
         run: php artisan jwt:secret --force
