@@ -48,7 +48,7 @@ class JWTAuthController extends Controller
             $user = JWTAuth::user();
             $token = JWTAuth::claims(['role' => $user->role])->fromUser($user);
             $response = response()->json(['token' => $token,'user' => $user]);
-            $response->cookie('jwt_token_car_rental', $token, 60, null, null, false, true, false, 'Strict');
+            $response->cookie('jwt_token_car_rental', $token, 60, '/', null, true, true, false, 'None');
             return $response;
         } catch (JWTException $e) {
             return response()->json(['error' => 'Could not create token'], 500);
@@ -83,7 +83,7 @@ class JWTAuthController extends Controller
     JWTAuth::setToken($token);
     JWTAuth::invalidate();
     $response = response()->json(['message' => 'Logged out successfully']);
-    $response->cookie('jwt_token_car_rental', '', -1, null, null, true, true, false, 'Strict');
+    $response->cookie('jwt_token_car_rental', '', -1, '/', null, true, true, false, 'None');
 
     return $response;
 }
