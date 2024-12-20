@@ -20,7 +20,7 @@ return [
     'allowed_origins' => ['*'], // Allows all origins (change this for more security)
 
     'allowed_headers' => ['*'], // Allows all headers
-
+    
     'exposed_headers' => false,
 
     'max_age' => 0,
