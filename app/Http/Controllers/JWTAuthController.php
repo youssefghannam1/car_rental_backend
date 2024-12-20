@@ -84,7 +84,7 @@ class JWTAuthController extends Controller
     JWTAuth::invalidate();
     $response = response()->json(['message' => 'Logged out successfully']);
     $response->cookie('jwt_token_car_rental', '', -1, '/', null, true, true, false, 'None');
-
+    
     return $response;
 }
 

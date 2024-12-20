@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('age')->nullable();
             $table->string('telephone')->nullable();
             $table->string('cin')->nullable()->unique();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('status', ['active', 'inactive'])->default('active')->nullable();
             $table->timestamps();
         });
 
