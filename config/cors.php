@@ -15,12 +15,12 @@ return [
     
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'], // Allows all methods (GET, POST, etc.)
+    'allowed_origins' => ['https://rentfront.netlify.app'],
 
-    'allowed_origins' => ['*'], // Allows all origins (change this for more security)
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
 
-    'allowed_headers' => ['*'], // Allows all headers
-    
+    'allowed_headers' => ['Content-Type', 'Authorization'], 
+
     'exposed_headers' => false,
 
     'max_age' => 0,
