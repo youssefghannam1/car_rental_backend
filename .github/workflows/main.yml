@@ -34,21 +34,7 @@ jobs:
           composer dump-autoload --optimize
 
       - name: Generate JWT Secret (if not set)
-        run: |
-          if [ ! -f .env ]; then
-            echo "Creating .env file..."
-            cp .env.example .env
-          fi
-          php artisan jwt:secret --force
-
-      - name: Clear Laravel Cache (config, route, and view)
-        run: |
-          php artisan config:clear
-          php artisan route:clear
-          php artisan view:clear
-
-      - name: Cache Laravel Configuration
-        run: php artisan config:cache
+        run: php artisan jwt:secret --force
 
       - name: 📂 Sync files
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
