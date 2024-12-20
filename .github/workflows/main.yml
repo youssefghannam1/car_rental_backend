@@ -2,11 +2,14 @@ on:
   push:
     branches:
       - main
+
 name: 🚀 Deploy website on push (Main)
+
 jobs:
   web-deploy:
     name: 🎉 Deploy
     runs-on: ubuntu-latest
+
     steps:
       - name: 🚚 Get latest code
         uses: actions/checkout@v2
@@ -26,7 +29,26 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run: |
+          composer install --prefer-dist --no-progress
+          composer dump-autoload --optimize
+
+      - name: Generate JWT Secret (if not set)
+        run: |
+          if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            cp .env.example .env
+          fi
+          php artisan jwt:secret --force
+
+      - name: Clear Laravel Cache (config, route, and view)
+        run: |
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+
+      - name: Cache Laravel Configuration
+        run: php artisan config:cache
 
       - name: 📂 Sync files
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
