@@ -42,5 +42,5 @@ jobs:
           server: ftp.vvvservices.com
           username: ${{ secrets.ftp_username }}
           password: ${{ secrets.ftp_password }}
-          server-dir: public_html/www2
+          server-dir: public_html/www2/
           force: true
