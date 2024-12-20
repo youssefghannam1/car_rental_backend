@@ -11,17 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('clients', function (Blueprint $table) {
+        Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->string('full_name');
-            $table->integer('age')->nullable();
-            $table->string('telephone')->nullable();
-            $table->string('cin')->nullable()->unique();
-            $table->enum('status', ['mauvaise', 'normale', 'bien'])->default('active');
+            $table->text('name');
             $table->timestamps();
         });
-
-
     }
 
     /**
@@ -29,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clients');
+        Schema::dropIfExists('tasks');
     }
 };

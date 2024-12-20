@@ -6,7 +6,6 @@ use App\Models\Invoice;
 use App\Models\Client;
 use App\Models\Car;
 use Illuminate\Http\Request;
-use App\Models\Reservation;
 
 class InvoiceController extends Controller
 {
@@ -49,7 +48,7 @@ class InvoiceController extends Controller
 
     public function getInvoices()
     {
-        $invoices = Invoice::with(['client', 'car'])->get();
+        $invoices = Invoice::with(['client', 'car'])->orderBy('created_at', 'desc')->get();
         return response()->json($invoices);
     }
 
@@ -58,7 +57,6 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
         $invoice->status = $request->status;
         $invoice->save();
-
         return response()->json($invoice);
     }
 }

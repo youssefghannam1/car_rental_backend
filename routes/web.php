@@ -7,6 +7,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\JWTAuthController;
 use App\Http\Middleware\JwtMiddleware;
 
@@ -27,6 +28,8 @@ Route::post('login', [JWTAuthController::class, 'login']);
     Route::get('/dashboard/upcoming_maintenances', [DashboardController::class, 'getUpcomingMaintenances']);
     Route::get('/dashboard/revenue_by_category', [DashboardController::class, 'getRevenueByCategory']);
     Route::get('/dashboard/revenues_and_losses', [DashboardController::class, 'getRevenuesAndLosses']);
+    Route::get('/dashboard/by_period', [DashboardController::class, 'byPeriod']);
+    Route::get('/dashboard/total_clients', [DashboardController::class, 'totalClients']);
 
     Route::get('/clients', [ClientController::class, 'index']);
     Route::get('/clients/{id}', [ClientController::class, 'show']);
@@ -36,10 +39,16 @@ Route::post('login', [JWTAuthController::class, 'login']);
     Route::put( '/clients/prolongation/{client}', [ClientController::class, 'prolongation']);
     Route::delete('/clients/{client}', [ClientController::class, 'destroy']);
 
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::get('/tasks/{id}', [TaskController::class, 'show']);
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::put( '/tasks/{task}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+
     Route::get('/cars', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
-    Route::put('/cars/{car}', [CarController::class, 'update']);
-    Route::delete('/cars/{car}', [CarController::class, 'destroy']);
+    Route::put('/cars/{id}', [CarController::class, 'update']);
+    Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
 
     Route::get('/reservations/cars', [ReservationController::class, 'getCars']);

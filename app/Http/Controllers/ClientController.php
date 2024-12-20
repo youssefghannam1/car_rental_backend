@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Car;
+use App\Models\Invoice;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,60 +18,66 @@ class ClientController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'age' => 'required|integer|min:18',
-            'cin' => 'required|string|unique:clients',
-            'telephone' => 'required|string|max:15',
-            'cars' => 'required|array',
-            'cars.*' => 'exists:cars,id',
-            'total_price' => 'required|numeric',
-            'date_debut' => 'required|date',
-            'date_fin' => 'required|date|after:date_debut',
-        ]);
+{
+    // Validate incoming request
+    $request->validate([
+        'full_name' => 'required|string|max:255',
+        'age' => 'required|integer|min:18',
+        'cin' => 'required|string|unique:clients',
+        'telephone' => 'required|string|max:15',
+        'cars' => 'required|array',
+        'cars.*' => 'exists:cars,id',
+        'total_price' => 'required|numeric',
+        'date_debut' => 'required|date',
+        'date_fin' => 'required|date|after:date_debut',
+    ]);
 
-        DB::transaction(function () use ($request) {
-            $client = Client::create($request->only('full_name', 'age', 'cin', 'telephone',['status' => 'en attente']));
+    DB::transaction(function () use ($request, &$client) {
+        $client = Client::create(array_merge(
+            $request->only('full_name', 'age', 'cin', 'telephone'), 
+            ['status' => 'en attente']
+        ));
 
-            // Create a reservation for the client
-            foreach ($request->cars as $carId) {
-                $car = Car::findOrFail($carId);
-                $car->status = 'pas disponible';
-                $car->save();
-
-                Reservation::create([
-                    'client_id' => $client->id,
-                    'car_id' => $carId,
-                    'start_date' => $request->date_debut,
-                    'end_date' => $request->date_fin,
-                    'status' => 'pending',
-                    'price' => $request->total_price / count($request->cars),
-                ]);
-            }
-
-            $client->cars()->attach($request->cars);
-        });
-
-        return apiResponse(null, 'Client and Reservation created successfully', 201);
-    }
+        foreach ($request->cars as $carId) {
+            $car = Car::findOrFail($carId);
+            $car->status = 'pas disponible';
+            $car->save();
+            Reservation::create([
+                'client_id' => $client->id,
+                'car_id' => $carId,
+                'start_date' => $request->date_debut,
+                'end_date' => $request->date_fin,
+                'status' => 'pending',
+                'price' => $request->total_price / count($request->cars),
+            ]);
+            Invoice::create([
+                'client_id' => $client->id,
+                'car_id' => $carId,
+                'date_issued' => $request->date_debut,
+                'due_date' => $request->date_fin,
+                'status' => 'unpaid',
+                'amount' => $request->total_price / count($request->cars),
+            ]);
+        } 
+        $client->cars()->attach($request->cars);
+    });
+    $clientContrat = $client ? Client::with(['cars', 'reservations.car'])->find($client->id) : null;
+    if (!$clientContrat)
+        return apiResponse([], 'Client creation failed', 500);
+    $clientWithRelations = $client->load(['invoices.car', 'invoices.client']); // Assuming 'car' is related to 'invoice'
+    return apiResponse(["contrat" => $clientContrat, "invoice" => $clientWithRelations->invoices], 'Client and Reservation created successfully', 201);
+}
 
     public function searchByCin($cin)
 {
-    // Validate the CIN format (letters and numbers allowed)
-    // Assuming the CIN is alphanumeric and may have a specific length, adjust the regex as needed
     if (!preg_match('/^[A-Za-z0-9]+$/', $cin)) {
         return apiResponse(null, 'Invalid CIN format', 400);
     }
-
-    // Search for the client in the database using the CIN
     $client = Client::with(['cars', 'reservations.car'])->where('cin', $cin)->first();
 
     if ($client) {
         return apiResponse($client, 'Client Found', 200);
     }
-
-    // If CIN is valid but not found, return a success message indicating new client
     return apiResponse(null, 'New client, not found in database', 200);
 }
 
@@ -83,6 +90,7 @@ public function update(Request $request, Client $client)
         'age' => 'required|integer|min:18',
         'cin' => 'required|string|unique:clients,cin,' . $client->id,
         'telephone' => 'required|string|max:15',
+        'status' => 'nullable|in:active,inactive'
     ]);
 
     DB::transaction(function () use ($request, $client) {
@@ -101,6 +109,9 @@ public function update(Request $request, Client $client)
             DB::table('client_car')->where('client_id', $client->id)->delete();
             Car::whereIn('id', $carIds)->update(['status' => 'disponible']);
             Reservation::where('client_id', $client->id)->update(['status' => 'cancelled']);
+            $client->cars()->delete();
+            $client->reservations()->delete();
+            $client->invoices()->delete();
             $client->delete();
         });
 

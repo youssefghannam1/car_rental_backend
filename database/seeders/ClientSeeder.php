@@ -71,7 +71,7 @@ class ClientSeeder extends Seeder
                 'age' => $ages[$index],
                 'telephone' => $telephones[$index],
                 'cin' => $cins[$index],
-                'status' => 'en attente',
+                'status' => 'active',
             ]);
         }
         DB::table('client_car')->insert([

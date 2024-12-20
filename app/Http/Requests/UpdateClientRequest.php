@@ -30,6 +30,7 @@ class UpdateClientRequest extends FormRequest
             'date_debut' => 'nullable',
             'date_fin' => 'nullable',
             'telephone' => 'required|string|max:15',
+            'status' => 'nullable|in:active,inactive'
         ];
     }
 }
