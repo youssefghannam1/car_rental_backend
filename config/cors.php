@@ -12,7 +12,7 @@ return [
     | from which the resource originated.
     |
     */
-
+    
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'], // Allows all methods (GET, POST, etc.)
