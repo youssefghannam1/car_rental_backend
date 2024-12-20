@@ -56,4 +56,5 @@ jobs:
           server: ftp.vvvservices.com
           username: ${{ secrets.ftp_username }}
           password: ${{ secrets.ftp_password }}
+          local-dir: .
           server-dir: public_html/
