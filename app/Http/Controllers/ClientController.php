@@ -19,7 +19,6 @@ class ClientController extends Controller
 
     public function store(Request $request)
 {
-    // Validate incoming request
     $request->validate([
         'full_name' => 'required|string|max:255',
         'age' => 'required|integer|min:18',
@@ -35,7 +34,7 @@ class ClientController extends Controller
     DB::transaction(function () use ($request, &$client) {
         $client = Client::create(array_merge(
             $request->only('full_name', 'age', 'cin', 'telephone'), 
-            ['status' => 'en attente']
+            ['status' => 'active']
         ));
 
         foreach ($request->cars as $carId) {
